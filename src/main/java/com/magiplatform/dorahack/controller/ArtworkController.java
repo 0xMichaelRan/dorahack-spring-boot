@@ -6,6 +6,7 @@ import com.magiplatform.dorahack.configuration.SwaggerApiVersionConstant;
 import com.magiplatform.dorahack.constants.ArtworkConstants;
 import com.magiplatform.dorahack.dto.base.ResultDto;
 import com.magiplatform.dorahack.entity.Artwork;
+import com.magiplatform.dorahack.entity.Auction;
 import com.magiplatform.dorahack.entity.TransHistory;
 import com.magiplatform.dorahack.service.IArtworkService;
 import com.magiplatform.dorahack.service.IAuctionService;
@@ -65,7 +66,10 @@ public class ArtworkController {
     @GetMapping("/all-new-arts")
     public ResultDto<List<Artwork>> getAllNewArts(HttpServletRequest request) {
         QueryWrapper<Artwork> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit 0," + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT);
+        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last(
+                "limit 0," + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT
+        );
+
         List<Artwork> list = artworkService.list(queryWrapper);
         return ResultDto.success(list);
     }
@@ -75,7 +79,10 @@ public class ArtworkController {
     @GetMapping("/all-previous-arts")
     public ResultDto<List<Artwork>> getAllPreviousArts(HttpServletRequest request) {
         QueryWrapper<Artwork> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit " + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT + ",999");
+        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last(
+                "limit " + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT + ",999"
+        );
+
         List<Artwork> list = artworkService.list(queryWrapper);
         return ResultDto.success(list);
     }
@@ -91,17 +98,17 @@ public class ArtworkController {
         return save ? ResultDto.success("创建成功") : ResultDto.failure("-1", "创建失败");
     }
 
-    @ApiOperation(value = "某件艺术品的拍卖和成交记录")
+    @ApiOperation(value = "某件艺术品的成交和tx记录")
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
-    @GetMapping("/id/auction_history")
-    public ResultDto<List<TransHistory>> getIdAuctionHistory(HttpServletRequest request, @RequestParam String id) {
-        // TODO: some issue with this
+    @GetMapping("/id/transaction_history")
+    public ResultDto<List<TransHistory>> getIdAuctionHistory(
+            HttpServletRequest request,
+            @RequestParam String id
+            ) {
         QueryWrapper<TransHistory> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda()
-                .eq(TransHistory::getArtId, id);
+        queryWrapper.lambda().eq(TransHistory::getArtId, id);
         List<TransHistory> list = transHistoryService.list(queryWrapper);
         return ResultDto.success(list);
-
     }
 
 }
