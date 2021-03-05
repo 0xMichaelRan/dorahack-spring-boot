@@ -59,7 +59,11 @@ public class AuctionController {
     @ApiOperation(value = "某一轮竞拍的历史和当前数据")
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
     @GetMapping("/id/round/id")
-    public ResultDto<List<Auction>> getIdRoundId(HttpServletRequest request, @RequestParam String artId, @RequestParam String auctionRound) {
+    public ResultDto<List<Auction>> getIdRoundId(
+            HttpServletRequest request,
+            @RequestParam String artId,
+            @RequestParam String auctionRound
+    ) {
         QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda()
                 .eq(Auction::getArtId, artId)
@@ -84,7 +88,11 @@ public class AuctionController {
 
         // 查询藏品id最大轮次的竞拍记录
         QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(Auction::getArtId, artId).eq(Auction::getIsHighestBid, "true").orderByDesc(Auction::getAuctionRound).last("limit 0,1");
+        queryWrapper.lambda()
+                .eq(Auction::getArtId, artId)
+                .eq(Auction::getIsHighestBid, "true")
+                .orderByDesc(Auction::getAuctionRound)
+                .last("limit 0,1");
         List<Auction> list = auctionService.list(queryWrapper);
 
         // 初始化竞拍
@@ -120,29 +128,57 @@ public class AuctionController {
     @ApiOperation(value = "给拍卖品出价")
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
     @PostMapping("/id/round/id/bid")
-    public ResultDto<List<Auction>> getIdRoundId(HttpServletRequest request, @RequestParam String artId, @RequestParam String auctionRound, @RequestParam String price, @RequestParam String bidUserId) {
+    public ResultDto<List<Auction>> bidPriceForArt(
+            HttpServletRequest request,
+            @RequestParam String artId,
+            @RequestParam String auctionRound,
+            @RequestParam String bidPrice,
+            @RequestParam String bidUserId
+    ) {
+        BigDecimal bidPriceBig = new BigDecimal(bidPrice);
 
         // 查询藏品id最大轮次的竞拍记录
         QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().eq(Auction::getArtId, artId).eq(Auction::getAuctionRound, auctionRound).eq(Auction::getIsHighestBid, "true");
-        Auction one = auctionService.getOne(queryWrapper);
+        queryWrapper.lambda()
+                .eq(Auction::getArtId, artId)
+                .eq(Auction::getAuctionRound, auctionRound)
+                .eq(Auction::getIsHighestBid, "true")
+                .last("limit 1");
+        Auction currentHighestBid = auctionService.getOne(queryWrapper);
 
-        if (AuctionConstants.StatusEnum.FINISHED.getCode().equals(one.getStatus()) || one.getBidPrice().compareTo(new BigDecimal(price)) >= 0) {
-            return ResultDto.failure("-1", "出价无效");
+        if (AuctionConstants.StatusEnum.FINISHED.getCode().equals(currentHighestBid.getStatus())) {
+            return ResultDto.failure("-1", "This round is already closed.");
+        }
+        else if (bidPriceBig.compareTo(currentHighestBid.getBidCapPrice()) > 0) {
+            // user's bid > price cap
+            return ResultDto.failure("-1", "Price cap for round " + currentHighestBid.getAuctionRound()
+                    + " is " + currentHighestBid.getBidCapPrice());
+        }
+        else if (currentHighestBid.getBidPrice().compareTo(bidPriceBig) > 0 ||
+                (currentHighestBid.getBidPrice().compareTo(bidPriceBig) == 0 && bidPriceBig.compareTo(currentHighestBid.getBidCapPrice()) < 0)) {
+            // current highest bid > user's bid
+            // Or current highest bid = user's bid < price cap
+            return ResultDto.failure("-1", "Your bid price is too low. ");
         }
 
         // 新增竞拍出价
-        Auction two = new Auction();
-        BeanUtils.copyProperties(one, two);
-        two.setId(String.valueOf(customIdGenerator.nextUUID(two)));
-        two.setBidUesrId(bidUserId);
-        two.setBidPrice(new BigDecimal(price));
-        two.setBidTime(LocalDateTime.now());
-        auctionService.save(two);
+        Auction newHighestBid = new Auction();
+        BeanUtils.copyProperties(currentHighestBid, newHighestBid);
+        newHighestBid.setId(String.valueOf(customIdGenerator.nextUUID(newHighestBid)));
+        newHighestBid.setBidUesrId(bidUserId);
+        newHighestBid.setBidPrice(bidPriceBig);
+        newHighestBid.setBidTime(LocalDateTime.now());
+        auctionService.save(newHighestBid);
 
         // 更新前一次竞拍出价false
-        one.setIsHighestBid("false");
-        auctionService.updateById(one);
+        if (currentHighestBid.getBidPrice().compareTo(bidPriceBig) < 0) {
+            // if previous highest bid < user's bid, previous bid is no longer the highest bid
+            currentHighestBid.setIsHighestBid("false");
+            auctionService.updateById(currentHighestBid);
+        } else {
+            // in this, previous highest bid = user's bid = price cap
+            // there are multiple rows with isHighestBid flat = true
+        }
 
         return ResultDto.success("出价成功");
     }
@@ -151,11 +187,6 @@ public class AuctionController {
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
     @PostMapping("/id/pay")
     public ResultDto<List<Auction>> idPay(HttpServletRequest request) {
-
-
-
-
-
         // todo-lichen
         return ResultDto.success("支付成功");
     }
