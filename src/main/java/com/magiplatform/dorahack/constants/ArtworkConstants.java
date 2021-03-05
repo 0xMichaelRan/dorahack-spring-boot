@@ -4,6 +4,8 @@ import com.magiplatform.dorahack.dto.base.BaseEnum;
 
 public class ArtworkConstants {
 
+    public static final int FRONT_PAGE_ARTWORK_COUNT = 2;
+
     public enum StatusEnum implements BaseEnum {
 
         ON_AUCTION("on_auction", "on_auction"),

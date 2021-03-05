@@ -65,7 +65,7 @@ public class ArtworkController {
     @GetMapping("/all-new-arts")
     public ResultDto<List<Artwork>> getAllNewArts(HttpServletRequest request) {
         QueryWrapper<Artwork> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit 0,12");
+        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit 0," + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT);
         List<Artwork> list = artworkService.list(queryWrapper);
         return ResultDto.success(list);
     }
@@ -75,7 +75,7 @@ public class ArtworkController {
     @GetMapping("/all-previous-arts")
     public ResultDto<List<Artwork>> getAllPreviousArts(HttpServletRequest request) {
         QueryWrapper<Artwork> queryWrapper = new QueryWrapper<>();
-        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit 12,999");
+        queryWrapper.lambda().orderByDesc(Artwork::getCreateTime).last("limit " + ArtworkConstants.FRONT_PAGE_ARTWORK_COUNT + ",999");
         List<Artwork> list = artworkService.list(queryWrapper);
         return ResultDto.success(list);
     }

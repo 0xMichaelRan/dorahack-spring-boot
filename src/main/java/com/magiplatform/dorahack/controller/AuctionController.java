@@ -94,23 +94,22 @@ public class AuctionController {
         auction.setId(String.valueOf(customIdGenerator.nextUUID(auction)));
         auction.setArtId(artId);
         auction.setStartTime(now);
-        auction.setEndTime(now.plusHours(8L));
+        auction.setEndTime(now.plusHours(AuctionConstants.AUCTION_PERIOD_HOURS));
         auction.setStatus(AuctionConstants.StatusEnum.HAPPENING.getCode());
 
         auction.setCreateTime(now);
         if (CollectionUtils.isEmpty(list)) {
             auction.setAuctionRound("1");
-            auction.setStartBidPrice(new BigDecimal("100"));
-            auction.setBidCapPrice(new BigDecimal("120"));
+            auction.setStartBidPrice(new BigDecimal(AuctionConstants.AUCTION_DEFAULT_INITIAL_PRICE));
+            auction.setBidCapPrice(new BigDecimal(AuctionConstants.AUCTION_DEFAULT_INITIAL_PRICE * AuctionConstants.AUCTION_PRICE_CAP_RATIO));
         } else {
             Auction maxAuction = list.get(0);
             auction.setAuctionRound(maxAuction.getAuctionRound() + 1);
             auction.setStartBidPrice(maxAuction.getBidPrice());
-            auction.setBidCapPrice(maxAuction.getBidPrice().multiply(new BigDecimal("1.2")));
+            auction.setBidCapPrice(maxAuction.getBidPrice().multiply(new BigDecimal(AuctionConstants.AUCTION_PRICE_CAP_RATIO)));
         }
         auction.setBidUesrId("0");
         auction.setBidPrice(new BigDecimal("0"));
-//            auction.setBidTime(now);
         auction.setIsHighestBid("true");
 
         auctionService.save(auction);

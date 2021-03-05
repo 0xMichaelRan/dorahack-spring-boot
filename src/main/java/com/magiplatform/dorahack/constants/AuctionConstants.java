@@ -4,6 +4,10 @@ import com.magiplatform.dorahack.dto.base.BaseEnum;
 
 public class AuctionConstants {
 
+    public static final int AUCTION_PERIOD_HOURS = 8;
+    public static final int AUCTION_DEFAULT_INITIAL_PRICE = 100;
+    public static final double AUCTION_PRICE_CAP_RATIO = 1.2;
+
     public enum StatusEnum implements BaseEnum {
 
         FINISHED("finished", "finished"),
