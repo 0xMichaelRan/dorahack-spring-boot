@@ -2,6 +2,9 @@ package com.magiplatform.dorahack.controller;
 import java.math.BigDecimal;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
+import com.baomidou.mybatisplus.extension.conditions.update.LambdaUpdateChainWrapper;
 import com.magiplatform.dorahack.configuration.SwaggerApiVersion;
 import com.magiplatform.dorahack.configuration.SwaggerApiVersionConstant;
 import com.magiplatform.dorahack.constants.ArtworkConstants;
@@ -9,6 +12,7 @@ import com.magiplatform.dorahack.constants.AuctionConstants;
 import com.magiplatform.dorahack.dto.base.ResultDto;
 import com.magiplatform.dorahack.entity.Artwork;
 import com.magiplatform.dorahack.entity.Auction;
+import com.magiplatform.dorahack.mapper.AuctionMapper;
 import com.magiplatform.dorahack.service.IArtworkService;
 import com.magiplatform.dorahack.service.IAuctionService;
 import com.magiplatform.dorahack.service.ITransHistoryService;
@@ -186,8 +190,47 @@ public class AuctionController {
     @ApiOperation(value = "给拍卖品支付（需要调用bsc接口）")
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
     @PostMapping("/id/pay")
-    public ResultDto<List<Auction>> idPay(HttpServletRequest request) {
-        // todo-lichen
+    public ResultDto<List<Auction>> idPay(
+            HttpServletRequest request,
+            @RequestParam String artId,
+            @RequestParam String auctionRound,
+            @RequestParam String paidPrice,
+            @RequestParam String bidUserId
+    ) {
+        // TODO: call BSC to process the payment
+        // Assuming payment is successful, here.
+
+        BigDecimal paidPriceBig = new BigDecimal(paidPrice);
+
+        // 1. update owner_id, status of artwork_table
+
+//        Artwork artwork = artworkService.getById(artId);
+//        artwork.setUserId();
+//        artwork.setStatus(ArtworkConstants.StatusEnum.FINISHED.getCode());
+//        artwork.setCreateTime(LocalDateTime.now());
+//        boolean save = artworkService.save(artwork);
+
+//        QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
+//        queryWrapper.lambda()
+//                .eq(Auction::getArtId, artId)
+//                .eq(Auction::getAuctionRound, auctionRound)
+//                .eq(Auction::getIsHighestBid, "true")
+//                .last("limit 1");
+//        Auction currentHighestBid = auctionService.getOne(queryWrapper);
+//        auctionService.updateById(currentHighestBid);
+
+        // 2。 update auction_status of auction_table (happening -> finished)
+        LambdaUpdateWrapper<Auction> lambda = new UpdateWrapper().lambda();
+        lambda
+                .eq(Auction::getArtId, artId)
+                .eq(Auction::getAuctionRound, auctionRound)
+                .eq(Auction::getStatus, AuctionConstants.StatusEnum.HAPPENING.getCode())
+                .set(Auction::getStatus, AuctionConstants.StatusEnum.FINISHED.getCode());
+        auctionService.update(lambda);
+
+        // 3. add new record in trans_history
+
+
         return ResultDto.success("支付成功");
     }
 
