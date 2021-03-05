@@ -9,9 +9,11 @@ import com.magiplatform.dorahack.configuration.SwaggerApiVersion;
 import com.magiplatform.dorahack.configuration.SwaggerApiVersionConstant;
 import com.magiplatform.dorahack.constants.ArtworkConstants;
 import com.magiplatform.dorahack.constants.AuctionConstants;
+import com.magiplatform.dorahack.constants.PaymentConstants;
 import com.magiplatform.dorahack.dto.base.ResultDto;
 import com.magiplatform.dorahack.entity.Artwork;
 import com.magiplatform.dorahack.entity.Auction;
+import com.magiplatform.dorahack.entity.TransHistory;
 import com.magiplatform.dorahack.mapper.AuctionMapper;
 import com.magiplatform.dorahack.service.IArtworkService;
 import com.magiplatform.dorahack.service.IAuctionService;
@@ -82,8 +84,6 @@ public class AuctionController {
     public ResultDto idStartAuction(HttpServletRequest request, @RequestParam String artId) {
 
         // 更新状态
-//        UpdateWrapper<Artwork> wrapper = new UpdateWrapper<>();
-//        wrapper.lambda().eq(Artwork::getId, artId);
         Artwork artwork = new Artwork();
         artwork.setId(artId);
         artwork.setStatus(ArtworkConstants.StatusEnum.ON_AUCTION.getCode());
@@ -116,7 +116,7 @@ public class AuctionController {
             auction.setBidCapPrice(new BigDecimal(AuctionConstants.AUCTION_DEFAULT_INITIAL_PRICE * AuctionConstants.AUCTION_PRICE_CAP_RATIO));
         } else {
             Auction maxAuction = list.get(0);
-            auction.setAuctionRound(maxAuction.getAuctionRound() + 1);
+            auction.setAuctionRound(String.valueOf(Integer.parseInt(maxAuction.getAuctionRound()) + 1));
             auction.setStartBidPrice(maxAuction.getBidPrice());
             auction.setBidCapPrice(maxAuction.getBidPrice().multiply(new BigDecimal(AuctionConstants.AUCTION_PRICE_CAP_RATIO)));
         }
@@ -172,6 +172,7 @@ public class AuctionController {
         newHighestBid.setBidUesrId(bidUserId);
         newHighestBid.setBidPrice(bidPriceBig);
         newHighestBid.setBidTime(LocalDateTime.now());
+        newHighestBid.setCreateTime(LocalDateTime.now());
         auctionService.save(newHighestBid);
 
         // 更新前一次竞拍出价false
@@ -203,21 +204,17 @@ public class AuctionController {
         BigDecimal paidPriceBig = new BigDecimal(paidPrice);
 
         // 1. update owner_id, status of artwork_table
+        Artwork artwork = artworkService.getById(artId);
+        System.out.println("artId is ");
+        System.out.println(artId);
 
-//        Artwork artwork = artworkService.getById(artId);
-//        artwork.setUserId();
-//        artwork.setStatus(ArtworkConstants.StatusEnum.FINISHED.getCode());
-//        artwork.setCreateTime(LocalDateTime.now());
-//        boolean save = artworkService.save(artwork);
-
-//        QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
-//        queryWrapper.lambda()
-//                .eq(Auction::getArtId, artId)
-//                .eq(Auction::getAuctionRound, auctionRound)
-//                .eq(Auction::getIsHighestBid, "true")
-//                .last("limit 1");
-//        Auction currentHighestBid = auctionService.getOne(queryWrapper);
-//        auctionService.updateById(currentHighestBid);
+        String currentOwner = artwork.getUserId();
+        artwork.setUserId(bidUserId); // the bid user ID is user ID in artwork table
+        artwork.setStatus(ArtworkConstants.StatusEnum.FINISHED.getCode());
+        boolean save = artworkService.updateById(artwork);
+        if (!save) {
+            ResultDto.failure("-1", "写入artwork_table失败");
+        }
 
         // 2。 update auction_status of auction_table (happening -> finished)
         LambdaUpdateWrapper<Auction> lambda = new UpdateWrapper().lambda();
@@ -226,12 +223,26 @@ public class AuctionController {
                 .eq(Auction::getAuctionRound, auctionRound)
                 .eq(Auction::getStatus, AuctionConstants.StatusEnum.HAPPENING.getCode())
                 .set(Auction::getStatus, AuctionConstants.StatusEnum.FINISHED.getCode());
-        auctionService.update(lambda);
+        save = auctionService.update(lambda);
+        if (!save) {
+            ResultDto.failure("-1", "写入auction_table失败");
+        }
 
         // 3. add new record in trans_history
+        TransHistory transHistory = new TransHistory();
+        transHistory.setId(String.valueOf(customIdGenerator.nextId(paidPrice)));
+        transHistory.setArtId(artId);
+        transHistory.setAuctionRound(auctionRound);
+        transHistory.setSellerId(currentOwner);
+        transHistory.setHighestBidUserId(bidUserId);
+        transHistory.setHighestBidPrice(new BigDecimal(paidPrice));
+        transHistory.setPaymentEndTime(LocalDateTime.now());
+        transHistory.setPaymentStatus(PaymentConstants.StatusEnum.SUCCESS.getCode());
 
-
-        return ResultDto.success("支付成功");
+        save = transHistoryService.save(transHistory);
+        return save
+                ? ResultDto.success("支付流水记录完成")
+                : ResultDto.failure("-1", "写入trans_history失败");
     }
 
 }
