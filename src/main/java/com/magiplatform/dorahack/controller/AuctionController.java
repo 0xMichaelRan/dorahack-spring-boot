@@ -62,19 +62,29 @@ public class AuctionController {
     @Autowired
     private CustomIdGenerator customIdGenerator;
 
-    @ApiOperation(value = "某一轮竞拍的历史和当前数据")
+    @ApiOperation(value = "最近一轮竞拍的历史和当前数据")
     @SwaggerApiVersion(group = SwaggerApiVersionConstant.WEB_1_0)
-    @GetMapping("/id/round/id")
+    @GetMapping("/id/round/latest")
     public ResultDto<List<Auction>> getIdRoundId(
             HttpServletRequest request,
-            @RequestParam String artId,
-            @RequestParam String auctionRound
+            @RequestParam String artId
     ) {
+        // 查询藏品id最大轮次的竞拍记录
         QueryWrapper<Auction> queryWrapper = new QueryWrapper<>();
         queryWrapper.lambda()
                 .eq(Auction::getArtId, artId)
-                .eq(Auction::getAuctionRound, auctionRound);
+                .eq(Auction::getIsHighestBid, "true")
+                .orderByDesc(Auction::getAuctionRound)
+                .last("limit 0,1");
         List<Auction> list = auctionService.list(queryWrapper);
+        String largestRound = list.get(0).getAuctionRound(); // this logic is not optimized
+
+        queryWrapper = new QueryWrapper<>();
+        queryWrapper.lambda()
+                .eq(Auction::getArtId, artId)
+                .eq(Auction::getAuctionRound, largestRound)
+                .orderByDesc(Auction::getBidPrice);
+        list = auctionService.list(queryWrapper);
         return ResultDto.success(list);
     }
 

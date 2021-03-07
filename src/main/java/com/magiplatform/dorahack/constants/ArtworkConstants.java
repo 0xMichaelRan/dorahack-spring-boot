@@ -4,7 +4,7 @@ import com.magiplatform.dorahack.dto.base.BaseEnum;
 
 public class ArtworkConstants {
 
-    public static final int FRONT_PAGE_ARTWORK_COUNT = 2;
+    public static final int FRONT_PAGE_ARTWORK_COUNT = 12;
 
     public enum StatusEnum implements BaseEnum {
 
