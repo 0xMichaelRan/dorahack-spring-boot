@@ -1,0 +1,108 @@
+user-defined:
+  common-configuration: app-dorahack
+server:
+  port: 9091
+  tomcat:
+    uri-encoding: UTF-8
+  servlet:
+    context-path: /dorahack
+
+spring:
+  application:
+    name: lightNet-dorahack-web
+  datasource:
+    name: liquidnet_dorahack_db
+    url: jdbc:mysql://${lightnet.mysql.urlHostAndPort}/${lightnet.mysql.database-name}?serverTimezone=UTC&characterEncoding=utf-8&useSSL=false
+    username: ${lightnet.mysql.username}
+    password: ${lightnet.mysql.password}
+#    type: org.apache.tomcat.jdbc.pool.DataSource
+    driver-class-name: com.mysql.jdbc.Driver
+    filters: stat
+    maxActive: 20
+    initialSize: 1
+    maxWait: 60000
+    minIdle: 1
+    timeBetweenEvictionRunsMillis: 60000
+    minEvictableIdleTimeMillis: 300000
+    validationQuery: select 'x'
+    testWhileIdle: true
+    testOnBorrow: false
+    testOnReturn: false
+    poolPreparedStatements: true
+    maxOpenPreparedStatements: 20
+  rabbitmq:
+    addresses: ${lightnet.rabbitmq.host}
+    port: ${lightnet.rabbitmq.port}
+    username: ${lightnet.rabbitmq.username}
+    password: ${lightnet.rabbitmq.password}
+  redis:
+    port: ${lightnet.redis.port}
+    host: ${lightnet.redis.host}
+    lettuce:
+      pool:
+        max-active: 8
+        max-wait: -1
+        max-idle: 8
+        min-idle: 0
+    password: ${lightnet.redis.password}
+  mvc:
+      static-path-pattern: /templates/**
+    # 定位模板的目录
+      view:
+        prefix: classpath:/templates/
+        suffix: .html
+  resources:
+      static-locations: classpath:/templates/,classpath:/static/page
+
+
+logging:
+  file:
+    name: ${lightnet.logfile.path}/${lightnet.logfile.name}
+  level:
+    root: info
+    #以下是为指定包设置日志级别
+    com:
+      liquidnet:
+        dorahack:
+          controller: info
+#  pattern:
+#    console: %d{yyyy/MM/dd-HH:mm:ss} [%thread] %-5level %logger- %msg%n
+#    file: %d{yyyy/MM/dd-HH:mm} [%thread] %-5level %logger- %msg%n
+
+#swagger:
+#  enable: ${lightnet.swagger.enable}
+knife4j:
+  basic:
+    enable: ${lightnet.knife4j.basic.enable}
+    username: ${lightnet.knife4j.basic.username}
+    password: ${lightnet.knife4j.basic.password}
+
+base:
+  url: ${lightnet.main-url}
+
+email:
+  sender:
+    host: liquidnet@lightnet.io
+    password: gdczsltecflrhyjn
+    smtp: smtp.gmail.com
+
+# 自定义 属性文件，可使用 PropertiesUtils.java 来读取
+upload:
+  custom:
+    properties:
+      attachmentServer: http://resource.liquidnet.xyz  #服务器静态文件地址
+      attachmentPath: /opt/resource
+      attachmentGainPath: /opt/resource
+
+#服务器存储文件的地址attachmentGainPath=/var/www/html/upload
+
+# 加密yan
+jwt:
+  secret: A0B1C2D3E4F5G6H7I8J9KALBMCNDOEPFQ0R1S2T3U4V5W6X7Y8Z9
+  # tocken 过期时间，单位秒
+  expire: 300
+  # 需要认证的url，多个URL使用英文逗号,分割
+  authorised-urls: /
+
+resource:
+  url: http://resource.liquidnet.xyz
