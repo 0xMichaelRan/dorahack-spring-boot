@@ -1,0 +1,34 @@
+lightnet:
+  main-url: http://www.liquidnet.com
+  mysql:
+    urlHostAndPort: 127.0.0.1:3306
+    database-name: dorahack
+    username: root
+    password: 123456
+  rabbitmq:
+    host: 101.201.100.206
+    port: 5672
+    username: admin
+    password: admin
+  redis:
+    host: 34.92.245.187
+    port: 6379
+    password: Lightnet12!
+  stellar:
+    url: https://horizon-testnet.stellar.org
+    fee: 100
+    test: true
+  logfile:
+    path: /opt/logfile
+    name: stellar-web.log
+#  swagger:
+#    enable: true
+  knife4j:
+    basic:
+      enable: true
+      username: admin
+      password: admin
+
+spring:
+  profiles:
+    include: dorahack
